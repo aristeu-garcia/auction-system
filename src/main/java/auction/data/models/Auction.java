@@ -5,6 +5,7 @@ import java.util.Comparator;
 import java.util.List;
 
 public class Auction {
+    private int id;
     private String code;
     private final String name;
     private AuctionState state;
@@ -81,6 +82,14 @@ public class Auction {
         }
     }
 
+    public int getId() {
+        return id;
+    }
+
+    public void setId(int id) {
+        this.id = id;
+    }
+
     @Override
     public String toString() {
         return "Auction{" +
@@ -94,4 +103,15 @@ public class Auction {
                 '}';
     }
 
+    public void setFinalValue(double finalValue) {
+        this.finalValue = finalValue;
+    }
+
+    public void setEndDate(LocalDateTime endDate) {
+        this.endDate = endDate;
+    }
+
+    public void setBids(List<Bid> bids) {
+        this.bids = bids;
+    }
 }

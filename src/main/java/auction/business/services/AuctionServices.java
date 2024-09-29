@@ -21,7 +21,7 @@ public class AuctionServices {
 
     public Auction create(String name, double initValue) {
         Auction auction = new Auction(generateCode(), name, AuctionState.INACTIVE, initValue, LocalDateTime.now().plusHours(4));
-        auctionPersistence.getAuctionsList().add(auction);
+        this.auctionPersistence.create(auction);
         return auction;
     }
     public boolean open(String code) {
@@ -103,9 +103,11 @@ public class AuctionServices {
     }
 
     public Optional<Auction> findByCode(String code) {
-        return auctionPersistence.getAuctionsList().stream()
-                .filter(auction -> auction.getCode().equals(code))
-                .findFirst();
+        Optional<Auction> auctionOpt = auctionPersistence.findByCode(code);
+        if (auctionOpt.isEmpty()) {
+            System.out.println("Auction with code " + code + " not found.");
+        }
+        return auctionOpt;
     }
 
     public void placeBid(String code, Double value, User user) {

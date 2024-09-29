@@ -1,0 +1,18 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:14
+    container_name: auction-db
+    environment:
+      POSTGRES_USER: auction_user
+      POSTGRES_PASSWORD: auction_pass
+      POSTGRES_DB: auction
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init-scripts:/docker-entrypoint-initdb.d
+
+volumes:
+  postgres_data:

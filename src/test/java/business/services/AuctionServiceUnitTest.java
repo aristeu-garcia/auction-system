@@ -67,6 +67,7 @@ public class AuctionServiceUnitTest {
 
         assertTrue(auctionFound.isPresent());
         assertEquals(auction.getCode(), auctionFound.get().getCode());
+        assertEquals(auctionFound.get().getState(), AuctionState.OPEN);
     }
 
 
