@@ -4,10 +4,7 @@ import auction.config.DatabaseConnection;
 import auction.data.models.Auction;
 import auction.data.models.AuctionState;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
+import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -17,14 +14,13 @@ public class AuctionPersistence {
     private List<Auction> auctionsList;
 
     public AuctionPersistence() {
-        this.auctionsList = new ArrayList<>();
     }
 
     public void create(Auction auction) {
         String sql = "INSERT INTO auctions (code, name, state, init_value, final_value, end_date) VALUES (?, ?, ?, ?, ?, ?)";
 
         try (Connection connection = DatabaseConnection.getConnection();
-             PreparedStatement pstmt = connection.prepareStatement(sql)) {
+             PreparedStatement pstmt = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
 
             pstmt.setString(1, auction.getCode());
             pstmt.setString(2, auction.getName());
@@ -32,6 +28,35 @@ public class AuctionPersistence {
             pstmt.setDouble(4, auction.getInitValue());
             pstmt.setDouble(5, auction.getFinalValue());
             pstmt.setTimestamp(6, java.sql.Timestamp.valueOf(auction.getEndDate()));
+
+            int affectedRows = pstmt.executeUpdate();
+
+            if (affectedRows == 0) {
+                throw new SQLException("Creating auction failed, no rows affected.");
+            }
+
+            try (ResultSet generatedKeys = pstmt.getGeneratedKeys()) {
+                if (generatedKeys.next()) {
+                    long generatedId = generatedKeys.getLong(1);
+                    auction.setId((int) generatedId);
+                } else {
+                    throw new SQLException("Creating auction failed, no ID obtained.");
+                }
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException("Failed to create auction: " + e.getMessage(), e);
+        }
+    }
+
+
+    public void updateStatus(String code, AuctionState auctionState) {
+        String sql = "UPDATE auctions SET state = ? WHERE code = ?";
+
+        try (Connection connection = DatabaseConnection.getConnection();
+             PreparedStatement pstmt = connection.prepareStatement(sql)) {
+
+            pstmt.setString(1, auctionState.toString());
+            pstmt.setString(2, code);
 
             pstmt.executeUpdate();
         } catch (SQLException e) {
@@ -96,17 +121,11 @@ public class AuctionPersistence {
         return Optional.empty();
     }
 
-
-    public void setAuctionsList(List<Auction> auctionsList) {
-        this.auctionsList = auctionsList;
-    }
-
     @Override
     public String toString() {
         return "AuctionPersistence{" +
                 "auctionsList=" + auctionsList +
                 '}';
     }
-
 
 }

@@ -1,6 +1,6 @@
 package auction.presentation.commands;
 import auction.business.services.AuctionServices;
-import auction.business.services.UserService;
+import auction.business.services.BidServices;
 import auction.data.models.User;
 import auction.presentation.interfaces.ICommand;
 
@@ -8,11 +8,11 @@ import java.util.Scanner;
 
 public class BidAnAuctionCommand implements ICommand {
 
-    private final AuctionServices auctionServices;
+    private final BidServices bidServices;
     private User user;
 
-    public BidAnAuctionCommand(AuctionServices auctionServices, User user) {
-        this.auctionServices = auctionServices;
+    public BidAnAuctionCommand(BidServices bidServices, User user) {
+        this.bidServices = bidServices;
     }
     @Override
     public void execute() {
@@ -41,7 +41,7 @@ public class BidAnAuctionCommand implements ICommand {
             }
         }
 
-        this.auctionServices.placeBid(code, value, this.user);
+        this.bidServices.placeBid(code, value, this.user);
         System.out.println("Lance aplicado com sucesso!");
 
     }

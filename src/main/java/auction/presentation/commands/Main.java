@@ -1,10 +1,13 @@
 package auction.presentation.commands;
 
 import auction.business.services.AuctionServices;
+import auction.business.services.BidServices;
 import auction.business.services.UserService;
 import auction.data.models.AuctionState;
+import auction.data.models.Bid;
 import auction.data.models.User;
 import auction.data.persistence.AuctionPersistence;
+import auction.data.persistence.BidPersistence;
 import auction.data.persistence.UserPersistence;
 import auction.presentation.commands.invoker.CommandInvoker;
 import auction.presentation.interfaces.ICommand;
@@ -36,7 +39,9 @@ public class Main {
         UserPersistence userPersistence = new UserPersistence();
         UserService userService = new UserService(userPersistence);
         AuctionPersistence auctionPersistence = new AuctionPersistence();
-        AuctionServices auctionServices = new AuctionServices(auctionPersistence);
+        BidPersistence bidPersistence = new BidPersistence();
+        BidServices bidServices = new BidServices(bidPersistence, userPersistence, auctionPersistence);
+        AuctionServices auctionServices = new AuctionServices(auctionPersistence, bidPersistence, userPersistence);
         CommandInvoker invoker = new CommandInvoker();
         Scanner scanner = new Scanner(System.in);
 
@@ -81,7 +86,7 @@ public class Main {
                     executeCommand(invoker, new FilterAuctionsCommand(auctionServices, AuctionState.EXPIRED));
                     break;
                 case 6:
-                    executeCommand(invoker, (ICommand) new BidAnAuctionCommand(auctionServices, currentUser));
+                    executeCommand(invoker, (ICommand) new BidAnAuctionCommand(bidServices, currentUser));
                     break;
                 case 7:
                     executeCommand(invoker, new OpenAuctionCommand(auctionServices));

@@ -5,18 +5,27 @@ import auction.data.models.AuctionState;
 import auction.data.models.Bid;
 import auction.data.models.User;
 import auction.data.persistence.AuctionPersistence;
-
-import java.lang.reflect.Array;
+import auction.data.persistence.BidPersistence;
+import auction.data.persistence.UserPersistence;
 import java.time.LocalDateTime;
 import java.util.*;
 
 public class AuctionServices {
 
     private AuctionPersistence auctionPersistence;
+    private BidPersistence bidPersistence;
+    private UserPersistence userPersistence;
 
 
-    public AuctionServices(AuctionPersistence auctionPersistence) {
+    public AuctionServices(
+            AuctionPersistence auctionPersistence,
+            BidPersistence bidPersistence,
+            UserPersistence userPersistence
+
+    ) {
         this.auctionPersistence = auctionPersistence;
+        this.bidPersistence = bidPersistence;
+        this.userPersistence = userPersistence;
     }
 
     public Auction create(String name, double initValue) {
@@ -24,11 +33,8 @@ public class AuctionServices {
         this.auctionPersistence.create(auction);
         return auction;
     }
-    public boolean open(String code) {
-        Auction auction = findByCode(code)
-                .orElseThrow(() -> new RuntimeException("Auction not found to open"));
-        auction.setState(AuctionState.OPEN);
-        return true;
+    public void open(String code) {
+        this.auctionPersistence.updateStatus(code, AuctionState.OPEN);
     }
 
     public boolean finish(String code) {
@@ -40,36 +46,18 @@ public class AuctionServices {
                 .orElse(null);
 
         if (winningBid != null) {
-            User winner = winningBid.getUser();
-            auction.setWinner(winner);
-            System.out.println("Sending congratulations message to: " + winner.getEmail());
+            Optional<User> winner = this.userPersistence.findById(winningBid.getUserId());
+            if(winner.isEmpty()){
+                throw new RuntimeException("Winner not found");
+            }
+            auction.setWinner(winner.get());
+            System.out.println("Sending congratulations message to: " + winner.get().getEmail());
         } else {
             System.out.println("No bids were placed on this auction.");
         }
 
         auction.setState(AuctionState.ENDED);
         return true;
-    }
-    public List<Bid> getOrderedBids(Auction auction){
-        List<Bid> bids = auction.getBids();
-        bids.sort(Comparator.reverseOrder());
-        return bids;
-    }
-    public List<Bid> getHighestAndLowestBid(Auction auction) {
-        List<Bid> bids = getOrderedBids(auction);
-
-        if (bids == null || bids.isEmpty()) {
-            return new ArrayList<>();
-        } else {
-            Bid highestBid = bids.get(0);
-            Bid lowestBid = bids.get(bids.size() - 1);
-
-            List<Bid> newBids = new ArrayList<>(2);
-            newBids.add(highestBid);
-            newBids.add(lowestBid);
-
-            return newBids;
-        }
     }
 
 
@@ -92,15 +80,14 @@ public class AuctionServices {
                 .toList();
     }
 
-    private Bid getLastBid(Auction auction){
-        List<Bid> bids = auction.getBids();
-
-        if (bids == null || bids.isEmpty()) {
-            return null;
+    public List<Auction> getAll() {
+        List<Auction> auctions = auctionPersistence.getAuctionsList();
+        if(auctions.isEmpty()){
+            System.out.println("No auctions found");
         }
-
-        return bids.get(bids.size() - 1);
+        return auctions;
     }
+
 
     public Optional<Auction> findByCode(String code) {
         Optional<Auction> auctionOpt = auctionPersistence.findByCode(code);
@@ -108,37 +95,5 @@ public class AuctionServices {
             System.out.println("Auction with code " + code + " not found.");
         }
         return auctionOpt;
-    }
-
-    public void placeBid(String code, Double value, User user) {
-        Optional<Auction> auctionOptional = findByCode(code);
-
-        Auction auction = auctionOptional.orElseThrow(() -> new RuntimeException("Auction not found"));
-
-        if(auction.getState() != AuctionState.OPEN){
-            throw new RuntimeException("Auction must be OPEN");
-        }
-
-        if (value <= auction.getInitValue()) {
-            throw new RuntimeException("Value must be greater than the initial bid");
-        }
-
-        Bid lastBid = this.getLastBid(auction);
-
-
-        if (lastBid != null && lastBid.getValue() >= value) {
-            throw new RuntimeException("Value must be greater than the last bid");
-        }
-
-        if (lastBid != null) {
-            User lastBidUser = lastBid.getUser();
-            if (lastBidUser != null && lastBidUser.equals(user)) {
-                throw new RuntimeException("User must not be the same as the last user");
-            }
-        }
-
-        Bid bid = new Bid(user,LocalDateTime.now(), value);
-        auction.getBids().add(bid);
-
     }
 }
